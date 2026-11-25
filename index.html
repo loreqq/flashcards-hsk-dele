@@ -161,6 +161,20 @@ input::placeholder,textarea::placeholder{color:#888888!important;-webkit-text-fi
 .field input{max-width:110px}
 .src{text-align:center;color:var(--muted);font-size:13px;margin-top:20px}
 .src a{color:var(--muted)}
+.modal{position:fixed;inset:0;background:rgba(40,10,20,.45);display:none;align-items:center;justify-content:center;z-index:15;padding:16px;cursor:auto}
+.modal.open{display:flex;animation:fade .2s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.mbox{background:#fff;width:100%;max-width:460px;max-height:92vh;overflow:auto;border-radius:28px;padding:14px 16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:rise .25s}
+@keyframes rise{from{transform:translateY(20px) scale(.97)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.modal.open,.mbox{animation:none}}
+.mhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.mhead h2{font-size:20px;margin:0}
+.mhead button{border:0;background:var(--soft);border-radius:999px;min-width:44px;min-height:44px;font-size:18px}
+.mprog{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);font-weight:700;margin-bottom:4px}
+.mcard{min-height:280px;margin-top:12px;cursor:pointer;box-shadow:0 8px 0 var(--line)}
+.mcard .lvtag{position:absolute;top:14px;left:16px;font-size:13px;font-weight:700;background:var(--soft);border-radius:999px;padding:1px 10px}
+.mbox .acts{margin-top:18px}
+.mbox .mcheer{text-align:center;font-weight:700;color:var(--mint);min-height:22px;margin-top:8px;font-size:15px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#111;color:#fff;padding:8px 16px;border-radius:999px;font-size:15px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:20}
 .toast.show{opacity:.92}
 </style>
@@ -310,6 +324,14 @@ input::placeholder,textarea::placeholder{color:#888888!important;-webkit-text-fi
   <div class="tools" style="justify-content:flex-start"><button class="btn" id="bImp">♻️ Khôi phục từ mã</button></div>
   <p id="bakMsg"></p>
 </div></div>
+<div class="modal" id="mReview" role="dialog" aria-modal="true" aria-labelledby="mTitle"><div class="mbox">
+  <div class="mhead"><h2 id="mTitle">⏰ Ôn tập hôm nay</h2><button id="mClose" aria-label="Đóng">✕</button></div>
+  <div class="mprog"><span id="mDone"></span><span id="mLeft"></span></div>
+  <div class="track"><div class="fill" id="mFill"></div></div>
+  <div class="card mcard" id="mCard"></div>
+  <div class="acts" id="mActs"></div>
+  <div class="mcheer" id="mCheer"></div>
+</div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -374,7 +396,7 @@ function loadLevel(lang,k){
 }
 function backfill(lang,k,rows){let ch=false;for(const c of rows){const r=srs[lang][c.h];if(r&&r.lv!==k){r.lv=k;ch=true}}if(ch)store("fc_srs_"+lang,srs[lang])}
 function levelOf(h){if(lvl!=="star")return lvl;const r=srs[g][h];if(r&&r.lv)return r.lv;for(const k of L().levels)if((cache[g][k]||[]).some(c=>c.h===h))return k;return undefined}
-function dueByLevel(){const t=today(),m={};let total=0;for(const r of Object.values(srs[g]))if(r.d<=t){total++;const k=r.lv||"?";m[k]=(m[k]||0)+1}return{m,total}}
+function dueByLevel(){const t=today(),m={},all=L().levels.every(k=>cache[g][k]);let total=0;for(const r of Object.values(srs[g]))if(r.d<=t){if(!r.lv&&all)continue;total++;const k=r.lv||"?";m[k]=(m[k]||0)+1}return{m,total}}
 function deckOf(k){return k==="star"?Object.values(stars[g]).map(LANGS[g].row):(cache[g][k]||[])}
 
 // ---------- session ----------
@@ -501,7 +523,7 @@ function renderBanner(){
   const parts=cfg.levels.filter(k=>m[k]).map(k=>`${cfg.label(k)}: ${m[k]}`);
   const top=cfg.levels.reduce((a,k)=>(m[k]||0)>(m[a]||0)?k:a,cfg.levels[0]);
   el.innerHTML=`<span style="font-size:26px">⏰</span><div class="bt"><b>Hôm nay có ${total.toLocaleString("vi-VN")} từ đến hạn ôn</b>${parts.length?`<small>${esc(parts.join(" · "))}</small>`:""}</div>`+
-    (m[top]?`<button class="go" data-l="${top}">Ôn ngay</button>`:"")+`<button class="x" aria-label="Ẩn thông báo hôm nay">✕</button>`;
+    `<button class="go">Ôn ngay</button>`+`<button class="x" aria-label="Ẩn thông báo hôm nay">✕</button>`;
   el.hidden=false;
 }
 function renderForecast(){
@@ -543,6 +565,43 @@ function renderSide(){
   }else $("wod").innerHTML='<h3>🌟 Từ của ngày</h3><div class="tip">Chọn một level để xem từ của ngày.</div>';
   const tips=TIPS[g];$("tip").textContent=tips[(t+(g==="es"?3:0))%tips.length];
 }
+// ---------- review popup: all due words across every level ----------
+const M={q:[],done:0,total:0,flipped:false,open:false};
+function openReview(){
+  const lang=g,{m}=dueByLevel(),cfg=L();
+  const lvls=m["?"]?cfg.levels:cfg.levels.filter(k=>m[k]);
+  $("mReview").classList.add("open");M.open=true;$("mCard").className="card mcard "+g;
+  $("mCard").innerHTML='<div class="tip">⏳ Đang chuẩn bị thẻ ôn...</div>';$("mActs").innerHTML="";$("mCheer").textContent="";
+  Promise.all(lvls.map(k=>loadLevel(lang,k))).then(()=>{
+    if(g!==lang)return;const t=today(),items=[];
+    for(const k of lvls)for(const c of cache[g][k]||[]){const r=srs[g][c.h];if(r&&r.d<=t)items.push({c,k,d:r.d})}
+    items.sort((a,b)=>a.d-b.d);M.q=items;M.done=0;M.total=items.length;M.flipped=false;
+    $("mTitle").textContent=`⏰ Ôn tập hôm nay · ${items.length} từ`;mRender(false);
+  });
+}
+function closeReview(){$("mReview").classList.remove("open");M.open=false;try{speechSynthesis.cancel()}catch(e){}
+  if(ready){buildQueue();render(false)}}
+function mRender(anim){
+  const cfg=L(),it=M.q[0],card=$("mCard");
+  $("mDone").textContent=`Đã ôn ${M.done} / ${M.total}`;$("mLeft").textContent=it?`Còn ${M.q.length} thẻ`:"";
+  $("mFill").style.width=(M.total?M.done/M.total*100:100)+"%";
+  if(!it){card.innerHTML=`<div class="big">🎉</div><div class="top" style="margin-top:10px">${M.total?`Đã ôn xong ${M.total} từ!`:"Không còn từ nào đến hạn"}</div><div class="tip">Hẹn gặp lại vào lần ôn tới nhé.</div>`;
+    $("mActs").innerHTML=`<button id="go">Đóng</button>`;return}
+  const c=it.c;
+  card.innerHTML=`<span class="lvtag">${cfg.emo[it.k]||""} ${esc(cfg.label(it.k))}</span>`+(M.flipped?backHtml(c):`<div class="han">${esc(c.h)}</div><div class="tip">👆 Chạm để xem nghĩa</div>`)+`<button class="say" data-m="say" aria-label="Nghe phát âm">🔊</button>`;
+  if(anim){card.classList.remove("pop");void card.offsetWidth;card.classList.add("pop")}
+  $("mActs").innerHTML=`<button id="no">😵 Chưa nhớ</button><button id="yes">😎 Đã nhớ</button>`;
+}
+function mGrade(yes){
+  const it=M.q[0];if(!it)return;applyGrade(it.c,yes,it.k);
+  M.q.shift();if(yes){M.done++;$("mCheer").textContent=pick(L().yes)}else{M.q.splice(Math.min(4,M.q.length),0,it);$("mCheer").textContent=pick(NO)}
+  M.flipped=false;mRender(true);
+}
+function mSpeak(){const it=M.q[0];if(!it)return;try{const u=new SpeechSynthesisUtterance(it.c.h);u.lang=L().speech;u.rate=g==="zh"?.8:.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){toast("😿 Trình duyệt không hỗ trợ phát âm")}}
+$("mClose").onclick=closeReview;
+$("mReview").addEventListener("click",e=>{if(e.target.id==="mReview")closeReview()});
+$("mCard").addEventListener("click",e=>{if(e.target.closest("[data-m=say]")){mSpeak();return}if(M.q[0]){M.flipped=!M.flipped;mRender(true)}});
+$("mActs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.id==="yes")mGrade(true);else if(b.id==="no")mGrade(false);else if(b.id==="go")closeReview()});
 function hintText(){
   const touch="ontouchstart" in window;
   $("hint").innerHTML=touch?"👆 Chạm = lật thẻ · 👉 Vuốt phải = Đã nhớ · 👈 Vuốt trái = Chưa nhớ":
@@ -550,6 +609,14 @@ function hintText(){
 }
 
 // ---------- actions ----------
+function applyGrade(c,yes,k,keepIfNotDue){
+  const t=today(),r=srs[g][c.h],dl=dayLog();
+  if(!r)dl.n++;else dl.r++;
+  if(yes&&keepIfNotDue&&r&&r.r>=1&&r.d>t){}
+  else if(yes){const step=r?Math.min((r.r||0),IV.length-1):0;srs[g][c.h]={r:(r?r.r:0)+1,i:IV[step],d:t+IV[step],lv:k||(r&&r.lv)}}
+  else srs[g][c.h]={r:0,i:0,d:t,lv:k||(r&&r.lv)};
+  saveSrs();store("fc_log",log);
+}
 function grade(yes){
   const c=current();if(!c)return;
   const t=today(),r=srs[g][c.h],dl=dayLog();
@@ -619,10 +686,10 @@ function setLang(code){
 }
 
 // ---------- events ----------
-const free=e=>e.target.closest&&e.target.closest("button,input,textarea,a,nav,form,.sheet,label,aside");
+const free=e=>e.target.closest&&e.target.closest("button,input,textarea,a,nav,form,.sheet,label,aside,.modal,.banner");
 let swiped=false;
-document.addEventListener("click",e=>{if(swiped){swiped=false;return}if(free(e))return;flip()});
-document.addEventListener("contextmenu",e=>{if(free(e))return;e.preventDefault();go(1)});
+document.addEventListener("click",e=>{if(swiped){swiped=false;return}if(M.open||!document.contains(e.target)||free(e))return;flip()});
+document.addEventListener("contextmenu",e=>{if(M.open||free(e))return;e.preventDefault();go(1)});
 $("lang").addEventListener("click",e=>{const b=e.target.closest("button");if(b&&b.dataset.g!==g)setLang(b.dataset.g)});
 $("modes").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;mode=b.dataset.m;store("fc_mode",mode);flipped=false;typed=null;render(true);if(mode==="listen")speak()});
 $("queue").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;queueMode=b.dataset.q;store("fc_queue",queueMode);buildQueue();if(queueMode==="all"&&hide)seek(0);flipped=false;typed=null;render(true)});
@@ -633,7 +700,7 @@ $("acts").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)
 $("card").addEventListener("click",e=>{if(e.target.id==="say")speak();if(e.target.id==="star")toggleStar()});
 $("banner").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   if(b.classList.contains("x")){store("fc_banner_"+g,today());$("banner").hidden=true;return}
-  queueMode="due";store("fc_queue","due");store("fc_banner_"+g,today());$("banner").hidden=true;$("cheer").textContent="";enter(b.dataset.l)});
+  openReview()});
 $("wod").addEventListener("click",e=>{const b=e.target.closest("button[data-w]");if(!b)return;
   const h=$("wod").dataset.h,pool=lvl==="star"?list:(cache[g][lvl]||[]),c=pool.find(x=>x.h===h);if(!c)return;
   if(b.dataset.w==="say"){try{const u=new SpeechSynthesisUtterance(c.h);u.lang=L().speech;u.rate=g==="zh"?.8:.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(err){toast("😿 Trình duyệt không hỗ trợ phát âm")}}
@@ -642,6 +709,8 @@ $("wod").addEventListener("click",e=>{const b=e.target.closest("button[data-w]")
 $("card").addEventListener("submit",e=>{e.preventDefault();checkTyped()});
 $("next").onclick=()=>go(1);$("prev").onclick=()=>go(-1);
 document.addEventListener("keydown",e=>{
+  if(M.open){if(e.key==="Escape")closeReview();else if(e.key===" "){e.preventDefault();if(M.q[0]){M.flipped=!M.flipped;mRender(true)}}
+    else if(e.key==="1")mGrade(false);else if(e.key==="2")mGrade(true);else if(e.key==="s"||e.key==="S")mSpeak();else if(e.key==="Enter"&&!M.q[0])closeReview();return}
   if(document.querySelector(".sheet.open")){if(e.key==="Escape")closeSheets();return}
   if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
   if(mode==="type"&&typed&&e.key==="Enter"){e.preventDefault();nextAfterType();return}
