@@ -26,7 +26,39 @@ html,body{background:#ffffff!important;color:#111111}
 html{min-height:100%;-webkit-tap-highlight-color:transparent}
 body{margin:0;min-height:100vh;color:var(--ink);font:16px/1.5 "Baloo 2","Noto Sans SC",system-ui,sans-serif;cursor:pointer;overflow-x:clip;
 padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-main{max-width:600px;margin:0 auto;padding:14px 14px 48px}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr);max-width:600px;margin:0 auto;padding:14px 14px 48px;gap:16px;position:relative;z-index:1}
+main{min-width:0;order:1}
+aside{order:2;display:grid;gap:14px;align-content:start}
+#asideL{order:3}
+@media(min-width:1100px){.wrap{grid-template-columns:250px minmax(0,600px) 250px;max-width:1196px;gap:28px}
+  aside{order:0;position:sticky;top:120px;align-self:start}#asideL{order:0}main{order:1}#asideR{order:2}}
+.box{background:#fff;border:2px solid var(--line);border-radius:22px;padding:12px 14px;cursor:auto}
+.box h3{font-size:17px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:0 8px}
+.box h3 small{font-weight:500;color:var(--muted);font-size:13px}
+.heat{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;max-width:260px;margin:0 auto}
+.heat span{aspect-ratio:1;border-radius:5px;background:var(--soft);border:1px solid #ffe0ea}
+.heat .h1{background:#c9f0e0;border-color:#c9f0e0}.heat .h2{background:#7fd9b5;border-color:#7fd9b5}.heat .h3{background:var(--mint);border-color:var(--mint)}
+.heat .now{outline:2px solid var(--pink);outline-offset:1px}
+.heat .dow{background:none;border:0;aspect-ratio:auto;font-size:11px;color:var(--muted);text-align:center}
+.legend{display:flex;align-items:center;gap:4px;justify-content:flex-end;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block;background:var(--soft)}
+.stat{display:grid;grid-template-columns:1fr auto;gap:5px 8px;font-size:15px}
+.stat b{text-align:right;font-variant-numeric:tabular-nums}
+.wod .w{font-size:40px;font-weight:700;line-height:1.15;text-align:center;overflow-wrap:anywhere}
+.lang-zh .wod .w{font-family:"Noto Sans SC",sans-serif}
+.wod .t{text-align:center;font-weight:700}.wod .hv2{text-align:center;font-size:14px;color:#b03a63}
+.wod .m{text-align:center;margin-top:4px}.wod .e{font-size:14px;background:var(--soft);border-radius:12px;padding:6px 10px;margin-top:8px;line-height:1.4}
+.wod .e .ezh{font-family:"Noto Sans SC",sans-serif}.wod .e small{color:var(--muted)}
+.wod .bt{display:flex;gap:6px;justify-content:center;margin-top:8px}
+.wod .bt button{border:2px solid var(--line);background:#fff;border-radius:12px;min-height:40px;padding:0 10px;font-size:14px}
+.tipbox p{margin:0;font-size:15px;line-height:1.45}
+.decor{position:fixed;inset:0;pointer-events:none;z-index:0;display:none}
+@media(min-width:1100px){.lang-zh .decor.zh,.lang-es .decor.es{display:block}}
+.decor svg{position:absolute}
+.sway{transform-origin:50% 0;animation:sway 4s ease-in-out infinite alternate}
+.sway.b{animation-duration:5s;animation-delay:-2s}
+@keyframes sway{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
+@media (prefers-reduced-motion:reduce){.sway{animation:none}}
 button{cursor:pointer;font:inherit;color:var(--ink)}
 button:focus-visible,input:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:5px;background:var(--soft);border:2px solid var(--line);border-radius:18px;padding:4px}
@@ -123,6 +155,75 @@ input::placeholder,textarea::placeholder{color:#888888!important;-webkit-text-fi
 </style>
 </head>
 <body>
+<div class="decor zh" aria-hidden="true">
+  <svg style="left:2vw;top:0" width="150" height="230" viewBox="0 0 150 230">
+    <g class="sway"><line x1="45" y1="0" x2="45" y2="70" stroke="#c9a06a" stroke-width="2"/><use href="#lantern" x="10" y="70"/></g>
+    <g class="sway b"><line x1="112" y1="0" x2="112" y2="30" stroke="#c9a06a" stroke-width="2"/><use href="#lanternS" x="86" y="30"/></g>
+  </svg>
+  <svg style="right:2vw;top:0" width="150" height="230" viewBox="0 0 150 230">
+    <g class="sway b"><line x1="40" y1="0" x2="40" y2="34" stroke="#c9a06a" stroke-width="2"/><use href="#lanternS" x="14" y="34"/></g>
+    <g class="sway"><line x1="105" y1="0" x2="105" y2="80" stroke="#c9a06a" stroke-width="2"/><use href="#lantern" x="70" y="80"/></g>
+  </svg>
+  <svg style="left:0;bottom:0" width="300" height="230" viewBox="0 0 300 230">
+    <path d="M0 225 C60 200 100 170 150 150 S240 110 290 60" stroke="#8a5a44" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M120 162 C130 130 150 115 170 108" stroke="#8a5a44" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M215 118 C225 140 240 150 262 152" stroke="#8a5a44" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <use href="#blossom" x="40" y="190"/><use href="#blossom" x="95" y="160"/><use href="#blossom" x="168" y="102"/><use href="#blossom" x="150" y="140"/>
+    <use href="#blossom" x="232" y="100"/><use href="#blossom" x="262" y="150"/><use href="#blossom" x="284" y="58"/><use href="#bud" x="70" y="200"/><use href="#bud" x="200" y="128"/><use href="#bud" x="128" y="122"/>
+  </svg>
+  <svg style="right:0;bottom:0" width="300" height="230" viewBox="0 0 300 230">
+    <g transform="translate(300 0) scale(-1 1)">
+    <path d="M0 225 C60 205 110 180 160 165 S240 140 290 110" stroke="#8a5a44" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M150 168 C160 140 175 128 195 122" stroke="#8a5a44" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <use href="#blossom" x="60" y="205"/><use href="#blossom" x="120" y="175"/><use href="#blossom" x="194" y="118"/><use href="#blossom" x="235" y="140"/><use href="#blossom" x="285" y="108"/><use href="#bud" x="170" y="150"/><use href="#bud" x="95" y="192"/>
+    </g>
+  </svg>
+</div>
+<div class="decor es" aria-hidden="true">
+  <svg style="left:0;top:0" width="360" height="130" viewBox="0 0 360 130">
+    <path d="M0 14 Q180 46 360 14" stroke="#c9a06a" stroke-width="2" fill="none"/>
+    <use href="#flag" x="8" y="16" fill="#ff8fb1"/><use href="#flag" x="66" y="26" fill="#ffd166"/><use href="#flag" x="124" y="31" fill="#7fd9b5"/><use href="#flag" x="182" y="31" fill="#9cc8ff"/><use href="#flag" x="240" y="26" fill="#c9a7ff"/><use href="#flag" x="298" y="16" fill="#ff9f7a"/>
+  </svg>
+  <svg style="right:0;top:0" width="360" height="130" viewBox="0 0 360 130">
+    <path d="M0 14 Q180 46 360 14" stroke="#c9a06a" stroke-width="2" fill="none"/>
+    <use href="#flag" x="8" y="16" fill="#7fd9b5"/><use href="#flag" x="66" y="26" fill="#ff9f7a"/><use href="#flag" x="124" y="31" fill="#ff8fb1"/><use href="#flag" x="182" y="31" fill="#ffd166"/><use href="#flag" x="240" y="26" fill="#9cc8ff"/><use href="#flag" x="298" y="16" fill="#c9a7ff"/>
+  </svg>
+  <svg style="left:0;bottom:0" width="130" height="200" viewBox="0 0 170 260">
+    <path d="M85 260 C85 200 88 150 85 110" stroke="#6aa84f" stroke-width="7" fill="none"/>
+    <path d="M86 200 C60 190 40 196 28 214 C50 222 72 216 86 200Z" fill="#8cc56b"/>
+    <path d="M86 170 C110 156 132 160 144 178 C122 188 100 184 86 170Z" fill="#8cc56b"/>
+    <use href="#sunflower" x="85" y="80"/>
+  </svg>
+  <svg style="right:0;bottom:0" width="130" height="170" viewBox="0 0 170 220">
+    <path d="M85 220 C88 180 84 150 85 120" stroke="#6aa84f" stroke-width="6" fill="none"/>
+    <path d="M85 180 C108 168 128 172 138 188 C118 196 98 192 85 180Z" fill="#8cc56b"/>
+    <g transform="translate(85 95) scale(.75)"><use href="#sunflower"/></g>
+  </svg>
+</div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="lantern"><rect x="23" y="0" width="24" height="8" rx="2" fill="#f2b33d"/><ellipse cx="35" cy="42" rx="35" ry="34" fill="#ff6b6b"/>
+      <path d="M35 8 C18 20 18 64 35 76 M35 8 C52 20 52 64 35 76" stroke="#e04848" stroke-width="2" fill="none"/><ellipse cx="24" cy="30" rx="6" ry="10" fill="#ff9a9a"/>
+      <rect x="23" y="74" width="24" height="8" rx="2" fill="#f2b33d"/><line x1="35" y1="82" x2="35" y2="110" stroke="#f2b33d" stroke-width="3"/><circle cx="35" cy="112" r="4" fill="#ff6b6b"/></g>
+    <g id="lanternS"><rect x="18" y="0" width="16" height="6" rx="2" fill="#f2b33d"/><ellipse cx="26" cy="30" rx="26" ry="24" fill="#ff6b6b"/>
+      <path d="M26 6 C14 16 14 46 26 54 M26 6 C38 16 38 46 26 54" stroke="#e04848" stroke-width="2" fill="none"/><ellipse cx="17" cy="22" rx="4" ry="7" fill="#ff9a9a"/>
+      <rect x="18" y="52" width="16" height="6" rx="2" fill="#f2b33d"/><line x1="26" y1="58" x2="26" y2="78" stroke="#f2b33d" stroke-width="3"/></g>
+    <g id="blossom"><g fill="#ffb7cd"><circle cx="0" cy="-8" r="7"/><circle cx="7.6" cy="-2.5" r="7"/><circle cx="4.7" cy="6.5" r="7"/><circle cx="-4.7" cy="6.5" r="7"/><circle cx="-7.6" cy="-2.5" r="7"/></g><circle r="4" fill="#ff7aa2"/><circle r="1.6" fill="#ffe08a"/></g>
+    <g id="bud"><ellipse rx="5" ry="7" fill="#ff9fbd" transform="rotate(30)"/></g>
+    <g id="flag"><path d="M0 0 H50 V48 L42 56 L34 48 L25 56 L16 48 L8 56 L0 48Z"/><g fill="#fff" opacity=".85"><circle cx="25" cy="18" r="7"/><rect x="9" y="8" width="6" height="6" transform="rotate(45 12 11)"/><rect x="35" y="8" width="6" height="6" transform="rotate(45 38 11)"/><circle cx="12" cy="34" r="3"/><circle cx="38" cy="34" r="3"/><rect x="22" y="31" width="6" height="6" transform="rotate(45 25 34)"/></g></g>
+    <g id="sunflower"><g fill="#ffcf4a">
+      <ellipse cx="0" cy="-34" rx="9" ry="18"/><ellipse cx="0" cy="-34" rx="9" ry="18" transform="rotate(30)"/><ellipse cx="0" cy="-34" rx="9" ry="18" transform="rotate(60)"/><ellipse cx="0" cy="-34" rx="9" ry="18" transform="rotate(90)"/>
+      <ellipse cx="0" cy="-34" rx="9" ry="18" transform="rotate(120)"/><ellipse cx="0" cy="-34" rx="9" ry="18" transform="rotate(150)"/><ellipse cx="0" cy="-34" rx="9" ry="18" transform="rotate(180)"/><ellipse cx="0" cy="-34" rx="9" ry="18" transform="rotate(210)"/>
+      <ellipse cx="0" cy="-34" rx="9" ry="18" transform="rotate(240)"/><ellipse cx="0" cy="-34" rx="9" ry="18" transform="rotate(270)"/><ellipse cx="0" cy="-34" rx="9" ry="18" transform="rotate(300)"/><ellipse cx="0" cy="-34" rx="9" ry="18" transform="rotate(330)"/></g>
+      <circle r="22" fill="#8a5a3c"/><circle r="15" fill="#a26b47"/><circle cx="-6" cy="-3" r="2.2" fill="#3a2418"/><circle cx="6" cy="-3" r="2.2" fill="#3a2418"/><path d="M-5 5 Q0 10 5 5" stroke="#3a2418" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="-11" cy="4" r="3" fill="#ff9fbd" opacity=".8"/><circle cx="11" cy="4" r="3" fill="#ff9fbd" opacity=".8"/></g>
+  </defs>
+</svg>
+<div class="wrap">
+<aside id="asideL">
+  <section class="box"><h3>📅 30 ngày qua <small id="heatSum"></small></h3><div class="heat" id="heat"></div>
+    <div class="legend">Ít <i></i><i style="background:#c9f0e0"></i><i style="background:#7fd9b5"></i><i style="background:var(--mint)"></i> Nhiều</div></section>
+  <section class="box"><h3>📊 Thống kê <small>mọi cấp</small></h3><div class="stat" id="stat"></div></section>
+</aside>
 <main>
 <nav class="seg row" id="lang">
   <button data-g="zh">🇨🇳 Tiếng Trung · HSK</button>
@@ -163,6 +264,11 @@ input::placeholder,textarea::placeholder{color:#888888!important;-webkit-text-fi
 </div>
 <p class="src" id="src"></p>
 </main>
+<aside id="asideR">
+  <section class="box wod" id="wod"></section>
+  <section class="box tipbox"><h3>💡 Mẹo học hôm nay</h3><p id="tip"></p></section>
+</aside>
+</div>
 
 <div class="sheet" id="shSearch"><div class="panel">
   <h2>🔍 Tìm từ <button data-close aria-label="Đóng">✕</button></h2>
@@ -313,7 +419,7 @@ function backHtml(c){
 function render(anim){
   if(!ready)return;
   const cfg=L(),c=current(),emo=cfg.emo[lvl]||"⭐";
-  const due=chips();renderTabs();
+  const due=chips();renderTabs();renderSide();
   for(const b of $("lang").children)b.classList.toggle("on",b.dataset.g===g);
   for(const b of $("modes").children)b.classList.toggle("on",b.dataset.m===mode);
   for(const b of $("queue").children)b.classList.toggle("on",b.dataset.q===queueMode);
@@ -352,6 +458,56 @@ function render(anim){
   $("count").textContent=queueMode==="all"?`Thẻ ${i+1} / ${list.length}`:"";
   if(mode==="type"&&!typed){const inp=$("tin");if(inp&&!("ontouchstart" in window))inp.focus()}
   if(queueMode==="all"){posSel[g][lvl]=i;store("fc_pos_"+g,posSel[g])}
+}
+const TIPS={
+  zh:["Đọc to âm Hán Việt khi học: 经济 kinh tế, 环境 hoàn cảnh... từ HSK 4 trở lên rất nhiều từ đoán được nghĩa nhờ âm Hán Việt.",
+    "Chú ý thanh điệu ngay từ đầu: mā má mǎ mà là 4 từ khác nhau. Bấm 🔊 và nhại lại theo giọng đọc.",
+    "Học từ trong câu: đọc câu ví dụ ở mặt sau thẻ, nhớ cả cụm từ đi kèm thay vì chỉ nhớ một chữ.",
+    "Tách chữ Hán thành bộ thủ: 好 = 女 (nữ) + 子 (tử). Hiểu cấu tạo chữ giúp nhớ lâu hơn nhiều.",
+    "Mỗi ngày đều đặn 15 phút tốt hơn học dồn 2 tiếng một lần. Giữ chuỗi 🔥 nhé!",
+    "Dùng chế độ ⌨️ Gõ từ để luyện pinyin: nhìn chữ Hán và tự gõ ra cách đọc.",
+    "Từ nào hay quên, bấm ☆ để lưu vào ⭐ Từ khó và ôn riêng trước khi đi ngủ.",
+    "Chữ 的, 了, 着, 过 là các trợ từ rất hay gặp: để ý vị trí của chúng trong câu ví dụ."],
+  es:["Luôn học danh từ kèm mạo từ: el libro, la mesa. Nhớ giống ngay từ đầu sẽ đỡ nhầm về sau.",
+    "Tiếng Tây Ban Nha đọc gần như đúng như viết. Bấm 🔊 và đọc theo từng âm tiết.",
+    "Trọng âm có quy tắc: từ tận cùng bằng nguyên âm, n hoặc s thì nhấn âm áp chót (ca-sa), nếu không thì có dấu (canción).",
+    "Nhiều từ giống tiếng Anh (información, posible) nhưng cẩn thận 'bạn giả': embarazada là có thai, không phải xấu hổ!",
+    "Dùng chế độ ⌨️ Gõ từ để luyện chính tả, đặc biệt các dấu á é í ó ú và chữ ñ.",
+    "Học động từ theo cặp ser/estar và por/para kèm câu ví dụ, đừng học riêng lẻ.",
+    "Mỗi ngày đều đặn 15 phút tốt hơn học dồn 2 tiếng một lần. ¡Ánimo!",
+    "Từ nào hay quên, bấm ☆ để lưu vào ⭐ Từ khó và ôn riêng trước khi đi ngủ."]
+};
+function dayCount(d){const x=log[d]&&log[d][g];return x?x.n+x.r:0}
+function renderSide(){
+  document.body.classList.toggle("lang-zh",g==="zh");document.body.classList.toggle("lang-es",g==="es");
+  const t=today(),start=t-34;
+  const dows=["T2","T3","T4","T5","T6","T7","CN"];
+  const firstDow=(new Date(start*86400000).getUTCDay()+6)%7;
+  let cells=dows.map(x=>`<span class="dow">${x}</span>`).join("")+Array(firstDow).fill('<span style="visibility:hidden"></span>').join("");
+  let sum=0,active=0;
+  for(let d=start;d<=t;d++){const n=dayCount(d);if(d>t-30){sum+=n;if(n)active++}
+    const lv=n===0?"":n<10?"h1":n<30?"h2":"h3";
+    const dt=new Date(d*86400000);cells+=`<span class="${lv}${d===t?" now":""}" title="${dt.getUTCDate()}/${dt.getUTCMonth()+1}: ${n} thẻ"></span>`}
+  $("heat").innerHTML=cells;$("heatSum").textContent=`${active} ngày có học`;
+  let best=0,run=0;const days=Object.keys(log).map(Number).sort((a,b)=>a-b);let prev=null;
+  for(const d of days){const has=Object.values(log[d]).some(x=>x.n+x.r>0);if(!has)continue;run=(prev!==null&&d===prev+1)?run+1:1;best=Math.max(best,run);prev=d}
+  const rec=Object.values(srs[g]),learned=rec.filter(x=>x.r>=1).length,dueAll=rec.filter(x=>x.d<=t).length;
+  let week=0;for(let d=t-6;d<=t;d++)week+=dayCount(d);
+  const totalWords=g==="zh"?10969:6459;
+  $("stat").innerHTML=`<span>🔥 Chuỗi hiện tại</span><b>${streak()} ngày</b><span>🏆 Chuỗi dài nhất</span><b>${best} ngày</b>
+    <span>✅ Đã thuộc</span><b>${learned.toLocaleString("vi-VN")} / ${totalWords.toLocaleString("vi-VN")}</b>
+    <span>⏰ Đến hạn ôn</span><b>${dueAll.toLocaleString("vi-VN")}</b><span>🔁 Thẻ tuần này</span><b>${week.toLocaleString("vi-VN")}</b>
+    <span>⭐ Từ khó</span><b>${Object.keys(stars[g]).length}</b>`;
+  // word of the day: stable per day, picked from the current level
+  const pool=lvl==="star"?list:(cache[g][lvl]||[]);
+  if(pool.length){
+    const c=pool[(t*2654435761>>>0)%pool.length],top=L().top(c),st=!!stars[g][c.h];
+    $("wod").innerHTML=`<h3>🌟 Từ của ngày <small>${esc(L().label(lvl))}</small></h3><div class="w">${esc(c.h)}</div>${top?`<div class="t">${esc(top)}</div>`:""}${c.hv?`<div class="hv2">Hán Việt: ${esc(c.hv)}</div>`:""}<div class="m">🇻🇳 ${esc(c.v)}</div>`+
+      (c.ex?`<div class="e"><div class="${g==="zh"?"ezh":""}">💬 ${esc(c.ex)}</div><small>${c.tl==="vi"?"🇻🇳":"🇬🇧"} ${esc(c.exTr)}</small></div>`:"")+
+      `<div class="bt"><button data-w="say">🔊 Nghe</button><button data-w="star">${st?"⭐ Đã lưu":"☆ Lưu từ khó"}</button></div>`;
+    $("wod").dataset.h=c.h;
+  }else $("wod").innerHTML='<h3>🌟 Từ của ngày</h3><div class="tip">Chọn một level để xem từ của ngày.</div>';
+  const tips=TIPS[g];$("tip").textContent=tips[(t+(g==="es"?3:0))%tips.length];
 }
 function hintText(){
   const touch="ontouchstart" in window;
@@ -428,7 +584,7 @@ function setLang(code){
 }
 
 // ---------- events ----------
-const free=e=>e.target.closest&&e.target.closest("button,input,textarea,a,nav,form,.sheet,label");
+const free=e=>e.target.closest&&e.target.closest("button,input,textarea,a,nav,form,.sheet,label,aside");
 let swiped=false;
 document.addEventListener("click",e=>{if(swiped){swiped=false;return}if(free(e))return;flip()});
 document.addEventListener("contextmenu",e=>{if(free(e))return;e.preventDefault();go(1)});
@@ -440,6 +596,11 @@ $("acts").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)
   if(b.id==="yes")grade(true);else if(b.id==="no"){if(mode==="type"&&!typed){typed={ok:false,msg:`📖 Đáp án: ${current().h}${g==="zh"?" · "+current().t:""}`};render(true);speak()}else grade(false)}
   else if(b.id==="go"){if(mode==="type"&&typed)nextAfterType();else if(b.dataset.again){buildQueue();$("cheer").textContent="🔁 Bắt đầu ôn lại!";render(true)}else{extraNew+=10;buildQueue();render(true)}}});
 $("card").addEventListener("click",e=>{if(e.target.id==="say")speak();if(e.target.id==="star")toggleStar()});
+$("wod").addEventListener("click",e=>{const b=e.target.closest("button[data-w]");if(!b)return;
+  const h=$("wod").dataset.h,pool=lvl==="star"?list:(cache[g][lvl]||[]),c=pool.find(x=>x.h===h);if(!c)return;
+  if(b.dataset.w==="say"){try{const u=new SpeechSynthesisUtterance(c.h);u.lang=L().speech;u.rate=g==="zh"?.8:.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(err){toast("😿 Trình duyệt không hỗ trợ phát âm")}}
+  else{if(stars[g][c.h]){delete stars[g][c.h];toast("Đã bỏ khỏi Từ khó")}else{stars[g][c.h]=g==="zh"?[c.h,c.t,c.v,c.hv,c.ex,c.exPy,c.exTr,c.tl]:[c.h,c.v,c.t,c.ex,c.exTr,c.tl];toast("⭐ Đã lưu vào Từ khó")}
+    store("fc_star_"+g,stars[g]);if(lvl==="star"){list=deckOf("star");buildQueue()}render(false)}});
 $("card").addEventListener("submit",e=>{e.preventDefault();checkTyped()});
 $("next").onclick=()=>go(1);$("prev").onclick=()=>go(-1);
 document.addEventListener("keydown",e=>{
