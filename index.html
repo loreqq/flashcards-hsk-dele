@@ -175,6 +175,22 @@ input::placeholder,textarea::placeholder{color:#888888!important;-webkit-text-fi
 .mcard .lvtag{position:absolute;top:14px;left:16px;font-size:13px;font-weight:700;background:var(--soft);border-radius:999px;padding:1px 10px}
 .mbox .acts{margin-top:18px}
 .mbox .mcheer{text-align:center;font-weight:700;color:var(--mint);min-height:22px;margin-top:8px;font-size:15px}
+.fab{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));z-index:12;display:flex;align-items:center;gap:8px;
+  min-height:56px;padding:0 18px 0 14px;border-radius:999px;border:2px solid var(--line);background:#fff;font-weight:700;font-size:16px;box-shadow:0 6px 20px rgba(255,111,156,.25);transition:transform .15s}
+.fab:hover{transform:translateY(-2px)}
+.fab .ic{font-size:22px}
+.fab .sub{display:block;font-size:12px;font-weight:500;color:var(--muted);line-height:1.1}
+.fab .lbl{text-align:left;line-height:1.15}
+.fab.due{background:#ff3b5c;border-color:#ff3b5c;color:#fff;box-shadow:0 6px 22px rgba(255,59,92,.45);animation:pulse 1.8s ease-in-out infinite}
+.fab.due .sub{color:#ffe3e8}
+.fab .bang{display:none;position:absolute;top:-8px;right:-6px;min-width:26px;height:26px;border-radius:999px;background:#ffd23f;color:#7a1020;font-weight:800;font-size:16px;line-height:22px;text-align:center;border:2px solid #fff;padding:0 4px}
+.fab.due .bang{display:block}
+@keyframes pulse{0%,100%{box-shadow:0 6px 22px rgba(255,59,92,.45),0 0 0 0 rgba(255,59,92,.45)}50%{box-shadow:0 6px 22px rgba(255,59,92,.45),0 0 0 12px rgba(255,59,92,0)}}
+@media (prefers-reduced-motion:reduce){.fab.due{animation:none}}
+.wrap{padding-bottom:96px}
+.banner[hidden]{display:none}
+@media(max-width:600px){.fab{min-height:50px;padding:0 14px 0 12px;font-size:15px}.fab .sub{display:none}}
+.toast{bottom:calc(86px + env(safe-area-inset-bottom))!important}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#111;color:#fff;padding:8px 16px;border-radius:999px;font-size:15px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:20}
 .toast.show{opacity:.92}
 </style>
@@ -332,6 +348,7 @@ input::placeholder,textarea::placeholder{color:#888888!important;-webkit-text-fi
   <div class="acts" id="mActs"></div>
   <div class="mcheer" id="mCheer"></div>
 </div></div>
+<button class="fab" id="fab" aria-label="Ôn ngay"><span class="ic">⏰</span><span class="lbl"><span id="fabT">Ôn ngay</span><span class="sub" id="fabS"></span></span><span class="bang">!</span></button>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -517,8 +534,17 @@ const TIPS={
     "Từ nào hay quên, bấm ☆ để lưu vào ⭐ Từ khó và ôn riêng trước khi đi ngủ."]
 };
 function dayCount(d){const x=log[d]&&log[d][g];return x?x.n+x.r:0}
+function nextDue(){const t=today();let d=Infinity,n=0;for(const r of Object.values(srs[g]))if(r.d>t){if(r.d<d){d=r.d;n=1}else if(r.d===d)n++}return d===Infinity?null:{d,n}}
+function dayLabel(d){const t=today(),dn=["CN","T2","T3","T4","T5","T6","T7"],dt=new Date(d*86400000);return d===t+1?"ngày mai":d===t+2?"ngày kia":`${dn[dt.getUTCDay()]} ${dt.getUTCDate()}/${dt.getUTCMonth()+1}`}
+function renderFab(total){
+  const f=$("fab"),nx=nextDue();
+  f.classList.toggle("due",total>0);
+  $("fabT").textContent=total>0?`Ôn ngay · ${total.toLocaleString("vi-VN")} từ`:"Ôn ngay";
+  $("fabS").textContent=total>0?"Có từ đến hạn hôm nay!":nx?`Lần ôn tới: ${dayLabel(nx.d)}`:"Chưa có từ cần ôn";
+  f.setAttribute("aria-label",total>0?`Ôn ngay, ${total} từ đến hạn`:"Ôn ngay, hôm nay không có từ đến hạn");
+}
 function renderBanner(){
-  const el=$("banner"),{m,total}=dueByLevel(),cfg=L();
+  const el=$("banner"),{m,total}=dueByLevel(),cfg=L();renderFab(total);
   if(!total||load("fc_banner_"+g,0)===today()){el.hidden=true;return}
   const parts=cfg.levels.filter(k=>m[k]).map(k=>`${cfg.label(k)}: ${m[k]}`);
   const top=cfg.levels.reduce((a,k)=>(m[k]||0)>(m[a]||0)?k:a,cfg.levels[0]);
@@ -576,16 +602,16 @@ function openReview(){
     if(g!==lang)return;const t=today(),items=[];
     for(const k of lvls)for(const c of cache[g][k]||[]){const r=srs[g][c.h];if(r&&r.d<=t)items.push({c,k,d:r.d})}
     items.sort((a,b)=>a.d-b.d);M.q=items;M.done=0;M.total=items.length;M.flipped=false;
-    $("mTitle").textContent=`⏰ Ôn tập hôm nay · ${items.length} từ`;mRender(false);
+    $("mTitle").textContent=items.length?`⏰ Ôn tập hôm nay · ${items.length} từ`:"⏰ Ôn tập hôm nay";mRender(false);
   });
 }
 function closeReview(){$("mReview").classList.remove("open");M.open=false;try{speechSynthesis.cancel()}catch(e){}
   if(ready){buildQueue();render(false)}}
 function mRender(anim){
   const cfg=L(),it=M.q[0],card=$("mCard");
-  $("mDone").textContent=`Đã ôn ${M.done} / ${M.total}`;$("mLeft").textContent=it?`Còn ${M.q.length} thẻ`:"";
+  $("mDone").textContent=M.total?`Đã ôn ${M.done} / ${M.total}`:"";$("mFill").parentNode.style.display=M.total?"":"none";$("mLeft").textContent=it?`Còn ${M.q.length} thẻ`:"";
   $("mFill").style.width=(M.total?M.done/M.total*100:100)+"%";
-  if(!it){card.innerHTML=`<div class="big">🎉</div><div class="top" style="margin-top:10px">${M.total?`Đã ôn xong ${M.total} từ!`:"Không còn từ nào đến hạn"}</div><div class="tip">Hẹn gặp lại vào lần ôn tới nhé.</div>`;
+  if(!it){const nx=nextDue();card.innerHTML=`<div class="big">${M.total?"🎉":"😌"}</div><div class="top" style="margin-top:10px">${M.total?`Đã ôn xong ${M.total} từ!`:"Hôm nay không có từ nào đến hạn"}</div><div class="tip">${nx?`Lần ôn tới: ${dayLabel(nx.d)} · ${nx.n} từ.`:"Hãy học vài từ mới ở mục 📅 Ôn hôm nay nhé."}<br>Khi đến hạn, nút ⏰ ở góc sẽ chuyển sang màu đỏ.</div>`;
     $("mActs").innerHTML=`<button id="go">Đóng</button>`;return}
   const c=it.c;
   card.innerHTML=`<span class="lvtag">${cfg.emo[it.k]||""} ${esc(cfg.label(it.k))}</span>`+(M.flipped?backHtml(c):`<div class="han">${esc(c.h)}</div><div class="tip">👆 Chạm để xem nghĩa</div>`)+`<button class="say" data-m="say" aria-label="Nghe phát âm">🔊</button>`;
@@ -599,6 +625,7 @@ function mGrade(yes){
 }
 function mSpeak(){const it=M.q[0];if(!it)return;try{const u=new SpeechSynthesisUtterance(it.c.h);u.lang=L().speech;u.rate=g==="zh"?.8:.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){toast("😿 Trình duyệt không hỗ trợ phát âm")}}
 $("mClose").onclick=closeReview;
+$("fab").onclick=()=>{if(!M.open)openReview()};
 $("mReview").addEventListener("click",e=>{if(e.target.id==="mReview")closeReview()});
 $("mCard").addEventListener("click",e=>{if(e.target.closest("[data-m=say]")){mSpeak();return}if(M.q[0]){M.flipped=!M.flipped;mRender(true)}});
 $("mActs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.id==="yes")mGrade(true);else if(b.id==="no")mGrade(false);else if(b.id==="go")closeReview()});
