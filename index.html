@@ -347,6 +347,7 @@ input::placeholder,textarea::placeholder{color:#888888!important;-webkit-text-fi
   <div class="card mcard" id="mCard"></div>
   <div class="acts" id="mActs"></div>
   <div class="mcheer" id="mCheer"></div>
+  <div style="text-align:center;margin-top:4px"><button class="btn" id="mBack">⬅️ Thẻ trước</button></div>
 </div></div>
 <button class="fab" id="fab" aria-label="Ôn ngay"><span class="ic">⏰</span><span class="lbl"><span id="fabT">Ôn ngay</span><span class="sub" id="fabS"></span></span><span class="bang">!</span></button>
 <div class="toast" id="toast"></div>
@@ -417,13 +418,14 @@ function dueByLevel(){const t=today(),m={},all=L().levels.every(k=>cache[g][k]);
 function deckOf(k){return k==="star"?Object.values(stars[g]).map(LANGS[g].row):(cache[g][k]||[])}
 
 // ---------- session ----------
-let lvl=lvlSel[g],list=[],queue=[],i=0,flipped=false,typed=null,ready=false,resetArm=false,extraNew=0;
+let hist=[],lvl=lvlSel[g],list=[],queue=[],i=0,flipped=false,typed=null,ready=false,resetArm=false,extraNew=0;
 const L=()=>LANGS[g];
 const known=h=>{const r=srs[g][h];return !!r&&r.r>=1};
 function dayLog(){const t=today();log[t]=log[t]||{};log[t][g]=log[t][g]||{n:0,r:0};return log[t][g]}
 function streak(){let s=0,t=today();const has=d=>log[d]&&Object.values(log[d]).some(x=>x.n+x.r>0);if(!has(t))t--;while(has(t)){s++;t--}return s}
 function shuffle(a){for(let x=a.length-1;x>0;x--){const y=Math.floor(Math.random()*(x+1));[a[x],a[y]]=[a[y],a[x]]}return a}
 function buildQueue(){
+  hist=[];
   if(queueMode==="known"){queue=shuffle(list.map((c,n)=>known(c.h)?n:-1).filter(n=>n>=0));return}
   const t=today(),due=[],fresh=[];
   list.forEach((c,n)=>{const r=srs[g][c.h];if(r){if(r.d<=t)due.push([r.d,n])}else fresh.push(n)});
@@ -481,7 +483,7 @@ function render(anim){
   for(const b of $("queue").children)b.classList.toggle("on",b.dataset.q===queueMode);
   $("hide").style.display=queueMode==="all"?"":"none";$("shuf").style.display=queueMode==="all"?"":"none";
   $("hide").classList.toggle("on",hide);
-  $("prev").style.visibility=queueMode==="all"?"visible":"hidden";
+  $("prev").style.visibility="visible";$("prev").style.opacity=(queueMode==="all"||hist.length)?"1":".45";
   const x=stats(lvl)||{n:0,t:0,pct:0};
   $("plabel").textContent=`${emo} Đã thuộc ${cfg.label(lvl)}: ${x.n.toLocaleString("vi-VN")} / ${x.t.toLocaleString("vi-VN")} từ`;
   $("pnum").textContent=queueMode==="due"?`Còn ${queue.length} thẻ hôm nay · ${due} từ đến hạn`:queueMode==="known"?`Còn ${queue.length} từ cần ôn lại`:`${x.pct}%`;
@@ -592,7 +594,7 @@ function renderSide(){
   const tips=TIPS[g];$("tip").textContent=tips[(t+(g==="es"?3:0))%tips.length];
 }
 // ---------- review popup: all due words across every level ----------
-const M={q:[],done:0,total:0,flipped:false,open:false};
+const M={q:[],done:0,total:0,flipped:false,open:false,hist:[]};
 function openReview(){
   const lang=g,{m}=dueByLevel(),cfg=L();
   const lvls=m["?"]?cfg.levels:cfg.levels.filter(k=>m[k]);
@@ -601,7 +603,7 @@ function openReview(){
   Promise.all(lvls.map(k=>loadLevel(lang,k))).then(()=>{
     if(g!==lang)return;const t=today(),items=[];
     for(const k of lvls)for(const c of cache[g][k]||[]){const r=srs[g][c.h];if(r&&r.d<=t)items.push({c,k,d:r.d})}
-    items.sort((a,b)=>a.d-b.d);M.q=items;M.done=0;M.total=items.length;M.flipped=false;
+    items.sort((a,b)=>a.d-b.d);M.q=items;M.hist=[];M.done=0;M.total=items.length;M.flipped=false;
     $("mTitle").textContent=items.length?`⏰ Ôn tập hôm nay · ${items.length} từ`:"⏰ Ôn tập hôm nay";mRender(false);
   });
 }
@@ -609,6 +611,7 @@ function closeReview(){$("mReview").classList.remove("open");M.open=false;try{sp
   if(ready){buildQueue();render(false)}}
 function mRender(anim){
   const cfg=L(),it=M.q[0],card=$("mCard");
+  $("mBack").style.opacity=M.hist.length?"1":".45";
   $("mDone").textContent=M.total?`Đã ôn ${M.done} / ${M.total}`:"";$("mFill").parentNode.style.display=M.total?"":"none";$("mLeft").textContent=it?`Còn ${M.q.length} thẻ`:"";
   $("mFill").style.width=(M.total?M.done/M.total*100:100)+"%";
   if(!it){const nx=nextDue();card.innerHTML=`<div class="big">${M.total?"🎉":"😌"}</div><div class="top" style="margin-top:10px">${M.total?`Đã ôn xong ${M.total} từ!`:"Hôm nay không có từ nào đến hạn"}</div><div class="tip">${nx?`Lần ôn tới: ${dayLabel(nx.d)} · ${nx.n} từ.`:"Hãy học vài từ mới ở mục 📅 Ôn hôm nay nhé."}<br>Khi đến hạn, nút ⏰ ở góc sẽ chuyển sang màu đỏ.</div>`;
@@ -619,20 +622,30 @@ function mRender(anim){
   $("mActs").innerHTML=`<button id="no">😵 Chưa nhớ</button><button id="yes">😎 Đã nhớ</button>`;
 }
 function mGrade(yes){
-  const it=M.q[0];if(!it)return;applyGrade(it.c,yes,it.k);
+  const it=M.q[0];if(!it)return;
+  const r0=srs[g][it.c.h];M.hist.push({it,yes,rec:r0?{...r0}:null,cnt:r0?"r":"n"});
+  applyGrade(it.c,yes,it.k);
   M.q.shift();if(yes){M.done++;$("mCheer").textContent=pick(L().yes)}else{M.q.splice(Math.min(4,M.q.length),0,it);$("mCheer").textContent=pick(NO)}
   M.flipped=false;mRender(true);
+}
+function mBack(){
+  const h=M.hist.pop();if(!h){toast("Chưa có thẻ nào trước đó");return}
+  if(h.rec)srs[g][h.it.c.h]=h.rec;else delete srs[g][h.it.c.h];
+  const dl=dayLog();dl[h.cnt]=Math.max(0,dl[h.cnt]-1);saveSrs();store("fc_log",log);
+  const at=M.q.lastIndexOf(h.it);if(at>=0)M.q.splice(at,1);M.q.unshift(h.it);if(h.yes)M.done=Math.max(0,M.done-1);
+  M.flipped=false;$("mCheer").textContent="↩️ Đã quay lại thẻ trước, bạn có thể chấm lại";mRender(true);
 }
 function mSpeak(){const it=M.q[0];if(!it)return;try{const u=new SpeechSynthesisUtterance(it.c.h);u.lang=L().speech;u.rate=g==="zh"?.8:.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){toast("😿 Trình duyệt không hỗ trợ phát âm")}}
 $("mClose").onclick=closeReview;
 $("fab").onclick=()=>{if(!M.open)openReview()};
+$("mBack").onclick=mBack;
 $("mReview").addEventListener("click",e=>{if(e.target.id==="mReview")closeReview()});
 $("mCard").addEventListener("click",e=>{if(e.target.closest("[data-m=say]")){mSpeak();return}if(M.q[0]){M.flipped=!M.flipped;mRender(true)}});
 $("mActs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.id==="yes")mGrade(true);else if(b.id==="no")mGrade(false);else if(b.id==="go")closeReview()});
 function hintText(){
   const touch="ontouchstart" in window;
   $("hint").innerHTML=touch?"👆 Chạm = lật thẻ · 👉 Vuốt phải = Đã nhớ · 👈 Vuốt trái = Chưa nhớ":
-    "🖱️ Click trái = lật thẻ · Click phải = thẻ tiếp theo · Kéo thẻ sang phải/trái = Đã nhớ/Chưa nhớ<br>⌨️ Space = lật · 1 = Chưa nhớ · 2 = Đã nhớ · S = nghe · ←/→ = chuyển thẻ";
+    "🖱️ Click trái = lật thẻ · Click phải = thẻ tiếp theo · Kéo thẻ sang phải/trái = Đã nhớ/Chưa nhớ<br>⌨️ Space = lật · 1 = Chưa nhớ · 2 = Đã nhớ · S = nghe · → = thẻ tiếp · ← = quay lại thẻ trước";
 }
 
 // ---------- actions ----------
@@ -647,6 +660,7 @@ function applyGrade(c,yes,k,keepIfNotDue){
 function grade(yes){
   const c=current();if(!c)return;
   const t=today(),r=srs[g][c.h],dl=dayLog();
+  if(queueMode!=="all")hist.push({n:queue[0],graded:true,rec:r?{...r}:null,cnt:r?"r":"n"});
   if(!r)dl.n++;else dl.r++;
   if(yes&&queueMode==="known"&&r&&r.r>=1&&r.d>t){
     $("cheer").textContent=pick(L().yes); // still remembered: keep its schedule
@@ -664,9 +678,21 @@ function grade(yes){
   flipped=false;typed=null;render(true);if(mode==="listen")setTimeout(speak,250);
 }
 function flip(){if(!ready||!current()||mode==="type")return;flipped=!flipped;render(true)}
+function back(){
+  const h=hist.pop();if(!h){toast("Chưa có thẻ nào trước đó");return}
+  if(h.graded){
+    const c=list[h.n];if(h.rec)srs[g][c.h]=h.rec;else delete srs[g][c.h];
+    const dl=dayLog();dl[h.cnt]=Math.max(0,dl[h.cnt]-1);saveSrs();store("fc_log",log);
+    $("cheer").textContent="↩️ Đã quay lại thẻ trước, bạn có thể chấm lại";
+  }else $("cheer").textContent="";
+  const at=queue.lastIndexOf(h.n);if(at>=0)queue.splice(at,1);queue.unshift(h.n);
+  flipped=false;typed=null;render(true);if(mode==="listen")setTimeout(speak,250);
+}
 function go(step){
-  if(!ready||!current())return;
-  if(queueMode!=="all"){if(step>0&&queue.length>1)queue.push(queue.shift())}else seek(step);
+  if(!ready)return;
+  if(queueMode!=="all"&&step<0){back();return}
+  if(!current())return;
+  if(queueMode!=="all"){if(step>0&&queue.length>1){hist.push({n:queue[0],graded:false});queue.push(queue.shift())}}else seek(step);
   flipped=false;typed=null;$("cheer").textContent="";render(true);if(mode==="listen")setTimeout(speak,250);
 }
 function checkTyped(){
@@ -737,7 +763,7 @@ $("card").addEventListener("submit",e=>{e.preventDefault();checkTyped()});
 $("next").onclick=()=>go(1);$("prev").onclick=()=>go(-1);
 document.addEventListener("keydown",e=>{
   if(M.open){if(e.key==="Escape")closeReview();else if(e.key===" "){e.preventDefault();if(M.q[0]){M.flipped=!M.flipped;mRender(true)}}
-    else if(e.key==="1")mGrade(false);else if(e.key==="2")mGrade(true);else if(e.key==="s"||e.key==="S")mSpeak();else if(e.key==="Enter"&&!M.q[0])closeReview();return}
+    else if(e.key==="1")mGrade(false);else if(e.key==="2")mGrade(true);else if(e.key==="ArrowLeft")mBack();else if(e.key==="s"||e.key==="S")mSpeak();else if(e.key==="Enter"&&!M.q[0])closeReview();return}
   if(document.querySelector(".sheet.open")){if(e.key==="Escape")closeSheets();return}
   if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
   if(mode==="type"&&typed&&e.key==="Enter"){e.preventDefault();nextAfterType();return}
