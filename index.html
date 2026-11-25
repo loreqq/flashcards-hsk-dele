@@ -31,7 +31,7 @@ main{min-width:0;order:1}
 aside{order:2;display:grid;gap:14px;align-content:start}
 #asideL{order:3}
 @media(min-width:1100px){.wrap{grid-template-columns:250px minmax(0,600px) 250px;max-width:1196px;gap:28px}
-  aside{order:0;position:sticky;top:120px;align-self:start}#asideL{order:0}main{order:1}#asideR{order:2}}
+  aside{order:0;margin-top:106px;align-self:start}#asideL{order:0}main{order:1}#asideR{order:2}}
 .box{background:#fff;border:2px solid var(--line);border-radius:22px;padding:12px 14px;cursor:auto}
 .box h3{font-size:17px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:0 8px}
 .box h3 small{font-weight:500;color:var(--muted);font-size:13px}
@@ -73,6 +73,17 @@ h1{font-size:26px;line-height:1.1;margin:14px 0 6px;text-align:center;text-wrap:
 .tab:hover{transform:translateY(-2px)}
 .tab.on{background:var(--pink);border-color:var(--pink);color:#fff}
 .tab small{font-size:12px;opacity:.85}
+.tab .due{background:#ff5d7a;color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:0 7px;line-height:18px;opacity:1}
+.tab.on .due{background:#fff;color:#d0405f}
+.banner{display:flex;align-items:center;gap:10px;background:#fff6db;border:2px solid #ffd977;border-radius:18px;padding:8px 10px 8px 14px;margin:12px 0 0;cursor:auto}
+.banner .bt{flex:1;font-size:15px;line-height:1.4}.banner .bt b{font-size:16px}
+.banner .bt small{display:block;color:var(--muted);font-size:13px}
+.banner button{border:0;border-radius:12px;min-height:40px;padding:0 12px;font-weight:700}
+.banner .go{background:var(--pink);color:#fff}.banner .x{background:transparent;font-size:18px;min-width:40px}
+.fc{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 8px;align-items:center;font-size:14px}
+.fc .bar2{height:12px;border-radius:999px;background:var(--soft);overflow:hidden}
+.fc .bar2 i{display:block;height:100%;border-radius:999px;background:var(--pink)}
+.fc .today2 i{background:#ff5d7a}.fc b{text-align:right;font-variant-numeric:tabular-nums}
 .prog{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:10px 14px;margin-bottom:14px}
 .prow{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;font-weight:700;margin-bottom:6px;gap:2px 8px}
 .prow small{font-weight:500;color:var(--muted);font-size:14px}
@@ -222,6 +233,7 @@ input::placeholder,textarea::placeholder{color:#888888!important;-webkit-text-fi
 <aside id="asideL">
   <section class="box"><h3>📅 30 ngày qua <small id="heatSum"></small></h3><div class="heat" id="heat"></div>
     <div class="legend">Ít <i></i><i style="background:#c9f0e0"></i><i style="background:#7fd9b5"></i><i style="background:var(--mint)"></i> Nhiều</div></section>
+  <section class="box"><h3>🗓️ Lịch ôn 7 ngày tới <small>mọi cấp</small></h3><div class="fc" id="fc"></div></section>
   <section class="box"><h3>📊 Thống kê <small>mọi cấp</small></h3><div class="stat" id="stat"></div></section>
 </aside>
 <main>
@@ -229,6 +241,7 @@ input::placeholder,textarea::placeholder{color:#888888!important;-webkit-text-fi
   <button data-g="zh">🇨🇳 Tiếng Trung · HSK</button>
   <button data-g="es">🇪🇸 Tây Ban Nha · DELE</button>
 </nav>
+<div class="banner" id="banner" hidden></div>
 <h1 id="title"></h1>
 <div class="chips" id="chips"></div>
 <nav class="seg row" id="modes">
@@ -356,9 +369,12 @@ const cache={zh:{},es:{}};
 function loadLevel(lang,k){
   if(cache[lang][k])return Promise.resolve(cache[lang][k]);
   return fetch(`data/${lang}-${k}.json`).then(r=>{if(!r.ok)throw 0;return r.json()})
-    .then(rows=>cache[lang][k]=rows.map(LANGS[lang].row))
+    .then(rows=>{cache[lang][k]=rows.map(LANGS[lang].row);backfill(lang,k,cache[lang][k]);return cache[lang][k]})
     .catch(()=>{toast("😿 Không tải được dữ liệu. Kiểm tra kết nối mạng nhé.");return []});
 }
+function backfill(lang,k,rows){let ch=false;for(const c of rows){const r=srs[lang][c.h];if(r&&r.lv!==k){r.lv=k;ch=true}}if(ch)store("fc_srs_"+lang,srs[lang])}
+function levelOf(h){if(lvl!=="star")return lvl;const r=srs[g][h];if(r&&r.lv)return r.lv;for(const k of L().levels)if((cache[g][k]||[]).some(c=>c.h===h))return k;return undefined}
+function dueByLevel(){const t=today(),m={};let total=0;for(const r of Object.values(srs[g]))if(r.d<=t){total++;const k=r.lv||"?";m[k]=(m[k]||0)+1}return{m,total}}
 function deckOf(k){return k==="star"?Object.values(stars[g]).map(LANGS[g].row):(cache[g][k]||[])}
 
 // ---------- session ----------
@@ -381,6 +397,7 @@ function enter(k,keepPos){
   lvl=k;lvlSel[g]=k;store("fc_lvl_"+g,k);ready=false;flipped=false;typed=null;extraNew=0;
   $("card").className="card "+g;$("card").innerHTML='<div class="tip">⏳ Đang tải từ vựng...</div>';
   const p=k==="star"?Promise.resolve():loadLevel(g,k);
+  for(const b of $("tabs").querySelectorAll(".tab"))b.classList.toggle("on",b.dataset.l===k);
   return p.then(()=>{list=deckOf(k).slice();i=keepPos!=null?keepPos:Math.min(posSel[g][k]||0,Math.max(0,list.length-1));
     buildQueue();if(queueMode==="all"&&hide)seek(0);ready=true;render(false);if(mode==="listen")setTimeout(speak,250)});
 }
@@ -400,10 +417,10 @@ function chips(){
   return due;
 }
 function renderTabs(){
-  const cfg=L(),nStar=Object.keys(stars[g]).length;
+  const cfg=L(),nStar=Object.keys(stars[g]).length,dueMap=dueByLevel().m;
   $("tabs").innerHTML=[...cfg.levels,"star"].map(k=>{
     if(k==="star")return `<button class="tab${lvl==="star"?" on":""}" data-l="star">⭐ Từ khó <small>${nStar}</small></button>`;
-    const x=stats(k);return `<button class="tab${k===lvl?" on":""}" data-l="${k}">${cfg.emo[k]} ${cfg.label(k)}${x?(x.n===x.t?" ✅":` <small>${Math.floor(x.pct)}%</small>`):""}</button>`}).join("");
+    const x=stats(k),dn=dueMap[k]||0;return `<button class="tab${k===lvl?" on":""}" data-l="${k}">${cfg.emo[k]} ${cfg.label(k)}${x?(x.n===x.t?" ✅":` <small>${Math.floor(x.pct)}%</small>`):""}${dn?`<small class="due" title="${dn} từ đến hạn ôn">${dn}</small>`:""}</button>`}).join("");
   $("mini").style.gridTemplateColumns=`repeat(${cfg.levels.length},minmax(0,1fr))`;
   $("mini").innerHTML=cfg.levels.map(k=>{const x=stats(k);return `<div>${k}<i><b style="width:${x?x.pct:0}%"></b></i></div>`}).join("");
 }
@@ -478,7 +495,24 @@ const TIPS={
     "Từ nào hay quên, bấm ☆ để lưu vào ⭐ Từ khó và ôn riêng trước khi đi ngủ."]
 };
 function dayCount(d){const x=log[d]&&log[d][g];return x?x.n+x.r:0}
+function renderBanner(){
+  const el=$("banner"),{m,total}=dueByLevel(),cfg=L();
+  if(!total||load("fc_banner_"+g,0)===today()){el.hidden=true;return}
+  const parts=cfg.levels.filter(k=>m[k]).map(k=>`${cfg.label(k)}: ${m[k]}`);
+  const top=cfg.levels.reduce((a,k)=>(m[k]||0)>(m[a]||0)?k:a,cfg.levels[0]);
+  el.innerHTML=`<span style="font-size:26px">⏰</span><div class="bt"><b>Hôm nay có ${total.toLocaleString("vi-VN")} từ đến hạn ôn</b>${parts.length?`<small>${esc(parts.join(" · "))}</small>`:""}</div>`+
+    (m[top]?`<button class="go" data-l="${top}">Ôn ngay</button>`:"")+`<button class="x" aria-label="Ẩn thông báo hôm nay">✕</button>`;
+  el.hidden=false;
+}
+function renderForecast(){
+  const t=today(),cnt=Array(7).fill(0);
+  for(const r of Object.values(srs[g])){const k=Math.max(0,r.d-t);if(k<7)cnt[k]++}
+  const mx=Math.max(1,...cnt),dn=["CN","T2","T3","T4","T5","T6","T7"];
+  $("fc").innerHTML=cnt.map((n,k)=>{const dt=new Date((t+k)*86400000);const lab=k===0?"Hôm nay":k===1?"Ngày mai":`${dn[dt.getUTCDay()]} ${dt.getUTCDate()}/${dt.getUTCMonth()+1}`;
+    return `<span>${lab}</span><span class="bar2${k===0?" today2":""}"><i style="width:${n?Math.max(6,n/mx*100):0}%"></i></span><b>${n}</b>`}).join("");
+}
 function renderSide(){
+  renderBanner();renderForecast();
   document.body.classList.toggle("lang-zh",g==="zh");document.body.classList.toggle("lang-es",g==="es");
   const t=today(),start=t-34;
   const dows=["T2","T3","T4","T5","T6","T7","CN"];
@@ -524,10 +558,10 @@ function grade(yes){
     $("cheer").textContent=pick(L().yes); // still remembered: keep its schedule
   }else if(yes){
     const step=r?Math.min((r.r||0),IV.length-1):0;
-    srs[g][c.h]={r:(r?r.r:0)+1,i:IV[step],d:t+IV[step]};
+    srs[g][c.h]={r:(r?r.r:0)+1,i:IV[step],d:t+IV[step],lv:levelOf(c.h)};
     $("cheer").textContent=pick(L().yes);
   }else{
-    srs[g][c.h]={r:0,i:0,d:t};
+    srs[g][c.h]={r:0,i:0,d:t,lv:levelOf(c.h)};
     $("cheer").textContent=pick(NO);
   }
   saveSrs();store("fc_log",log);
@@ -580,7 +614,8 @@ function setLang(code){
   if(!LANGS[code])code="zh";g=code;store("fc_lang",g);
   if(location.hash!=="#"+g)history.replaceState(null,"","#"+g);
   $("title").textContent=L().title;$("src").innerHTML=L().src;$("cheer").textContent="";
-  enter(lvlSel[g]);
+  const lang=g;
+  enter(lvlSel[g]).then(()=>{if(Object.values(srs[lang]).some(r=>!r.lv))Promise.all(LANGS[lang].levels.map(k=>loadLevel(lang,k))).then(()=>{if(g===lang)render(false)})});
 }
 
 // ---------- events ----------
@@ -596,6 +631,9 @@ $("acts").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)
   if(b.id==="yes")grade(true);else if(b.id==="no"){if(mode==="type"&&!typed){typed={ok:false,msg:`📖 Đáp án: ${current().h}${g==="zh"?" · "+current().t:""}`};render(true);speak()}else grade(false)}
   else if(b.id==="go"){if(mode==="type"&&typed)nextAfterType();else if(b.dataset.again){buildQueue();$("cheer").textContent="🔁 Bắt đầu ôn lại!";render(true)}else{extraNew+=10;buildQueue();render(true)}}});
 $("card").addEventListener("click",e=>{if(e.target.id==="say")speak();if(e.target.id==="star")toggleStar()});
+$("banner").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.classList.contains("x")){store("fc_banner_"+g,today());$("banner").hidden=true;return}
+  queueMode="due";store("fc_queue","due");store("fc_banner_"+g,today());$("banner").hidden=true;$("cheer").textContent="";enter(b.dataset.l)});
 $("wod").addEventListener("click",e=>{const b=e.target.closest("button[data-w]");if(!b)return;
   const h=$("wod").dataset.h,pool=lvl==="star"?list:(cache[g][lvl]||[]),c=pool.find(x=>x.h===h);if(!c)return;
   if(b.dataset.w==="say"){try{const u=new SpeechSynthesisUtterance(c.h);u.lang=L().speech;u.rate=g==="zh"?.8:.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(err){toast("😿 Trình duyệt không hỗ trợ phát âm")}}
