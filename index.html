@@ -138,6 +138,7 @@ input::placeholder,textarea::placeholder{color:#888888!important;-webkit-text-fi
 <div class="tabs" id="tabs"></div>
 <nav class="seg row" id="queue">
   <button data-q="due">📅 Ôn hôm nay</button>
+  <button data-q="known">✅ Từ đã thuộc</button>
   <button data-q="all">📖 Duyệt tất cả</button>
 </nav>
 <div class="prog">
@@ -172,7 +173,7 @@ input::placeholder,textarea::placeholder{color:#888888!important;-webkit-text-fi
 <div class="sheet" id="shSet"><div class="panel">
   <h2>⚙️ Cài đặt <button data-close aria-label="Đóng">✕</button></h2>
   <div class="field"><label for="goal">Số từ mới mỗi ngày:</label><input type="number" id="goal" min="1" max="200"></div>
-  <p>Mỗi ngày, mục "📅 Ôn hôm nay" gồm các từ đến hạn ôn và tối đa số từ mới này. Từ "Đã nhớ" sẽ quay lại sau 1 ngày, rồi 3, 7, 18, 45 ngày... Từ "Chưa nhớ" quay lại ngay sau vài thẻ.</p>
+  <p>Mỗi ngày, mục "📅 Ôn hôm nay" gồm các từ đến hạn ôn và tối đa số từ mới này. Từ "Đã nhớ" sẽ quay lại sau 1 ngày, rồi 3, 7, 18, 45 ngày... Từ "Chưa nhớ" quay lại ngay sau vài thẻ. Mục "✅ Từ đã thuộc" cho ôn lại mọi từ đã đánh dấu "Đã nhớ" bất cứ lúc nào, theo thứ tự ngẫu nhiên.</p>
   <button class="btn" id="resetP">🧹 Xoá tiến độ level này</button>
 </div></div>
 
@@ -260,14 +261,16 @@ const L=()=>LANGS[g];
 const known=h=>{const r=srs[g][h];return !!r&&r.r>=1};
 function dayLog(){const t=today();log[t]=log[t]||{};log[t][g]=log[t][g]||{n:0,r:0};return log[t][g]}
 function streak(){let s=0,t=today();const has=d=>log[d]&&Object.values(log[d]).some(x=>x.n+x.r>0);if(!has(t))t--;while(has(t)){s++;t--}return s}
+function shuffle(a){for(let x=a.length-1;x>0;x--){const y=Math.floor(Math.random()*(x+1));[a[x],a[y]]=[a[y],a[x]]}return a}
 function buildQueue(){
+  if(queueMode==="known"){queue=shuffle(list.map((c,n)=>known(c.h)?n:-1).filter(n=>n>=0));return}
   const t=today(),due=[],fresh=[];
   list.forEach((c,n)=>{const r=srs[g][c.h];if(r){if(r.d<=t)due.push([r.d,n])}else fresh.push(n)});
   due.sort((a,b)=>a[0]-b[0]);
   const room=lvl==="star"?fresh.length:Math.max(0,(set.goal[g]||20)-dayLog().n)+extraNew;
   queue=[...due.map(x=>x[1]),...fresh.slice(0,room)];
 }
-function current(){if(queueMode==="due")return queue.length?list[queue[0]]:null;return list[i]||null}
+function current(){if(queueMode!=="all")return queue.length?list[queue[0]]:null;return list[i]||null}
 function enter(k,keepPos){
   lvl=k;lvlSel[g]=k;store("fc_lvl_"+g,k);ready=false;flipped=false;typed=null;extraNew=0;
   $("card").className="card "+g;$("card").innerHTML='<div class="tip">⏳ Đang tải từ vựng...</div>';
@@ -319,10 +322,16 @@ function render(anim){
   $("prev").style.visibility=queueMode==="all"?"visible":"hidden";
   const x=stats(lvl)||{n:0,t:0,pct:0};
   $("plabel").textContent=`${emo} Đã thuộc ${cfg.label(lvl)}: ${x.n.toLocaleString("vi-VN")} / ${x.t.toLocaleString("vi-VN")} từ`;
-  $("pnum").textContent=queueMode==="due"?`Còn ${queue.length} thẻ hôm nay · ${due} từ đến hạn`:`${x.pct}%`;
+  $("pnum").textContent=queueMode==="due"?`Còn ${queue.length} thẻ hôm nay · ${due} từ đến hạn`:queueMode==="known"?`Còn ${queue.length} từ cần ôn lại`:`${x.pct}%`;
   $("fill").style.width=x.pct+"%";
   const card=$("card");card.className="card "+g;card.style.transform="";
   if(!list.length){card.innerHTML=lvl==="star"?`<div class="big">⭐</div><div class="tip">Chưa có từ khó nào.<br>Bấm ☆ ở góc thẻ để lưu từ hay quên vào đây.</div>`:`<div class="tip">Chưa có từ cho level này.</div>`;$("acts").innerHTML="";$("count").textContent="";return}
+  if(!c&&queueMode==="known"){
+    const any=list.some(w=>known(w.h));
+    card.innerHTML=any?`<span class="mascot">${emo}</span><div class="big">🏅</div><div class="top" style="margin-top:10px">Đã ôn hết các từ đã thuộc!</div><div class="tip">Từ nào bạn bấm "Chưa nhớ" đã được đưa về lịch ôn.</div>`
+      :`<span class="mascot">${emo}</span><div class="big">📭</div><div class="tip">Chưa có từ nào được đánh dấu "Đã nhớ" ở ${esc(cfg.label(lvl))}.<br>Hãy học vài từ ở "📅 Ôn hôm nay" trước nhé.</div>`;
+    $("acts").innerHTML=any?`<button id="go" data-again="1">🔁 Ôn lại lần nữa</button>`:"";$("count").textContent="";return;
+  }
   if(!c){
     card.innerHTML=`<span class="mascot">${emo}</span><div class="big">🎉</div><div class="top" style="margin-top:10px">Xong bài hôm nay rồi!</div><div class="tip">Quay lại vào ngày mai để ôn tiếp nhé.</div>`;
     $("acts").innerHTML=lvl==="star"?"":`<button id="go">➕ Học thêm 10 từ mới</button>`;$("count").textContent="";return;
@@ -355,7 +364,9 @@ function grade(yes){
   const c=current();if(!c)return;
   const t=today(),r=srs[g][c.h],dl=dayLog();
   if(!r)dl.n++;else dl.r++;
-  if(yes){
+  if(yes&&queueMode==="known"&&r&&r.r>=1&&r.d>t){
+    $("cheer").textContent=pick(L().yes); // still remembered: keep its schedule
+  }else if(yes){
     const step=r?Math.min((r.r||0),IV.length-1):0;
     srs[g][c.h]={r:(r?r.r:0)+1,i:IV[step],d:t+IV[step]};
     $("cheer").textContent=pick(L().yes);
@@ -364,14 +375,14 @@ function grade(yes){
     $("cheer").textContent=pick(NO);
   }
   saveSrs();store("fc_log",log);
-  if(queueMode==="due"){const n=queue.shift();if(!yes)queue.splice(Math.min(4,queue.length),0,n)}
+  if(queueMode!=="all"){const n=queue.shift();if(!yes)queue.splice(Math.min(4,queue.length),0,n)}
   else seek(1);
   flipped=false;typed=null;render(true);if(mode==="listen")setTimeout(speak,250);
 }
 function flip(){if(!ready||!current()||mode==="type")return;flipped=!flipped;render(true)}
 function go(step){
   if(!ready||!current())return;
-  if(queueMode==="due"){if(step>0&&queue.length>1)queue.push(queue.shift())}else seek(step);
+  if(queueMode!=="all"){if(step>0&&queue.length>1)queue.push(queue.shift())}else seek(step);
   flipped=false;typed=null;$("cheer").textContent="";render(true);if(mode==="listen")setTimeout(speak,250);
 }
 function checkTyped(){
@@ -427,7 +438,7 @@ $("queue").addEventListener("click",e=>{const b=e.target.closest("button");if(!b
 $("tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(b&&ready){$("cheer").textContent="";enter(b.dataset.l)}});
 $("acts").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   if(b.id==="yes")grade(true);else if(b.id==="no"){if(mode==="type"&&!typed){typed={ok:false,msg:`📖 Đáp án: ${current().h}${g==="zh"?" · "+current().t:""}`};render(true);speak()}else grade(false)}
-  else if(b.id==="go"){if(mode==="type"&&typed)nextAfterType();else{extraNew+=10;buildQueue();render(true)}}});
+  else if(b.id==="go"){if(mode==="type"&&typed)nextAfterType();else if(b.dataset.again){buildQueue();$("cheer").textContent="🔁 Bắt đầu ôn lại!";render(true)}else{extraNew+=10;buildQueue();render(true)}}});
 $("card").addEventListener("click",e=>{if(e.target.id==="say")speak();if(e.target.id==="star")toggleStar()});
 $("card").addEventListener("submit",e=>{e.preventDefault();checkTyped()});
 $("next").onclick=()=>go(1);$("prev").onclick=()=>go(-1);
