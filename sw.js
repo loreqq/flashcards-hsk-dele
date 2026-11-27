@@ -1,5 +1,5 @@
 // Offline support: app shell is network-first, word data and fonts are cache-first.
-const VER = 'fc-v8';
+const VER = 'fc-v9';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VER).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
